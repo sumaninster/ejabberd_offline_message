@@ -1,0 +1,4 @@
+  mod_http_offline:
+    post_url: "http://localhost:9001/v1/offline/notify"
+    auth_token: "aaaaaaaaa"
+    auth_token_key: "bbbbbbbb" 
