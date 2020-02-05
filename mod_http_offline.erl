@@ -48,15 +48,15 @@ depends(_Host, _Opts) ->
 
 mod_opt_type(post_url) ->
     econf:string();
-mod_opt_type(auth_token) ->
+mod_opt_type(key) ->
     econf:string();
-mod_opt_type(auth_token_key) ->
+mod_opt_type(secret) ->
     econf:string().
 
 mod_options(Host) ->
     [{post_url, fun(Host) -> ejabberd_config:get_option({post_url, Host}) end},
-    {auth_token, fun(Host) -> ejabberd_config:get_option({auth_token, Host}) end},
-    {auth_token_key, fun(Host) -> ejabberd_config:get_option({auth_token_key, Host}) end}].
+    {key, fun(Host) -> ejabberd_config:get_option({key, Host}) end},
+    {secret, fun(Host) -> ejabberd_config:get_option({secret, Host}) end}].
 
 get_info(Acc, _From, _To, _Node, _Lang) ->
     Acc.
@@ -100,20 +100,18 @@ notify_message({_Action, #message{from = From, to = To} = Packet} = Acc) ->
 
 -spec post_offline_message(#offline_msg{}) -> ok | {error, full | any()}.
 post_offline_message(#offline_msg{us = {User, Server}, from = From, to = To, packet = Packet} = Msg) ->
-    Token = gen_mod:get_module_opt(To#jid.lserver, ?MODULE, auth_token),
-    PostUrl = gen_mod:get_module_opt(To#jid.lserver, ?MODULE, post_url),
+    Key = gen_mod:get_module_opt(Server, ?MODULE, key),
+    Secret = gen_mod:get_module_opt(Server, ?MODULE, secret),
+    PostUrl = gen_mod:get_module_opt(Server, ?MODULE, post_url),
     ToUser = To#jid.luser,
     FromUser = From#jid.luser,
     Vhost = To#jid.lserver,
-    Data = "a",
-    TokenKey = "tk",
-    MessageId = "123",
-    RequestURL = "http://localhost:9001/v1/offline/notify",
+    [{_, _, Message}] = Packet#message.body,
     Headers = [{"X-Admin", "true"}],
     ContentType = "application/json",
-    Body = jiffy:encode(#{<<"Token">> => Token, <<"TokenKey">> => TokenKey, <<"ToUser">> => ToUser, <<"FromUser">> => FromUser, <<"Data">> => Data}),
-    {ok, {{_, 200, _}, _, _}} = httpc:request(post, {RequestURL, Headers, ContentType, Body}, [], []),
-    ?INFO_MSG("Posting From ~p To ~p Body ~p ID ~p~n",[From, To, Body, MessageId]),
+    Body = jiffy:encode(#{<<"Key">> => list_to_binary(Key), <<"Secret">> => list_to_binary(Secret), <<"ToUser">> => ToUser, <<"FromUser">> => FromUser, <<"Message">> => Message}),
+    {ok, {{_, 200, _}, _, _}} = httpc:request(post, {PostUrl, Headers, ContentType, Body}, [], []),
+    ?INFO_MSG("Posting From ~p To ~p Body ~p ID ~p~n",[From, To, PostUrl, Key, Secret, Body]),
     ?INFO_MSG("Req forwarded for notification", []).
 
 init_cache(Mod, Host, Opts) ->

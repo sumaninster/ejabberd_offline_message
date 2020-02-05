@@ -1,9 +1,9 @@
-./autogen.sh
+./autogen.sh\
 
-rm -rf deps ; rm -rf _build
+rm -rf deps ; rm -rf _build\
 
-./configure --enable-user=ejabberd --enable-all --enable-latest-deps
+./configure --enable-user=ejabberd --enable-all --enable-latest-deps\
 
-make
+make\
 
-make install
+make install\
