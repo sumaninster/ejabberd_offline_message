@@ -104,14 +104,19 @@ post_offline_message(#offline_msg{us = {User, Server}, from = From, to = To, pac
     Secret = gen_mod:get_module_opt(Server, ?MODULE, secret),
     PostUrl = gen_mod:get_module_opt(Server, ?MODULE, post_url),
     ToUser = To#jid.luser,
+    ToVhost = To#jid.lserver,
     FromUser = From#jid.luser,
-    Vhost = To#jid.lserver,
+    FromVhost = From#jid.lserver,
+    MessageType = Packet#message.type,
+    MessageID = Packet#message.id,
     [{_, _, Message}] = Packet#message.body,
     Headers = [{"X-Admin", "true"}],
     ContentType = "application/json",
-    Body = jiffy:encode(#{<<"Key">> => list_to_binary(Key), <<"Secret">> => list_to_binary(Secret), <<"ToUser">> => ToUser, <<"FromUser">> => FromUser, <<"Message">> => Message}),
+    Body = jiffy:encode(#{<<"Key">> => list_to_binary(Key), <<"Secret">> => list_to_binary(Secret), <<"ToUser">> => ToUser, <<"ToVhost">> => ToVhost, <<"FromUser">> => FromUser, <<"FromVhost">> => FromVhost, <<"MessageID">> => MessageID, <<"MessageType">> => MessageType, <<"Message">> => Message}),
     {ok, {{_, 200, _}, _, _}} = httpc:request(post, {PostUrl, Headers, ContentType, Body}, [], []),
-    ?INFO_MSG("Posting From ~p To ~p Body ~p ID ~p~n",[From, To, PostUrl, Key, Secret, Body]),
+    ?INFO_MSG("Posting: PostUrl ~p Key ~p Secret ~p ToUser ~p ToVhost ~p FromUser ~p FromVhost ~p MessageID ~p MessageType ~p Message ~p~n",[PostUrl, Key, Secret, ToUser, ToVhost, FromUser, FromVhost, MessageID, MessageType, Message]),
+    ?INFO_MSG("BodyInfo: Body ~p~n", [Body]),
+    %?INFO_MSG("PacketInfo: To ~p From ~p Packet ~p~n", [To, From, Packet]),
     ?INFO_MSG("Req forwarded for notification", []).
 
 init_cache(Mod, Host, Opts) ->
